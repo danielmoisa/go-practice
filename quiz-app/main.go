@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -26,21 +27,39 @@ func main() {
 	r := csv.NewReader(csvFile)
 	lines, err := r.ReadAll()
 	if err != nil {
-		log.Fatal("Error reading CSV blocks")
+		log.Fatal("Error reading CSV blocks", err)
 	}
+
+	// Init timer
+	timer := time.NewTimer(time.Second * 5)
 
 	// Run the quiz
 	correct := 0
 	for i, line := range lines {
 		fmt.Printf("Problem #%d: %s = ", i+1, line[0])
 
-		var answer string
-		fmt.Scanf("%s\n", &answer)
+		// Create a channel for timer
+		answerCh := make(chan string)
 
-		// Use strings.TrimSpace to handle any accidental whitespace
-		if strings.TrimSpace(answer) == strings.TrimSpace(line[1]) {
-			correct++
+		// Launch the goroutine
+		go func() {
+			var answer string
+			fmt.Scanf("%s\n", &answer)
+
+			answerCh <- answer
+		}()
+
+		// Select the timer if ends, else continue with answer
+		select {
+		case <-timer.C:
+			fmt.Printf("\nTime's up! You scored %d/%d.\n", correct, len(lines))
+			return
+		case answer := <-answerCh:
+			if strings.TrimSpace(answer) == strings.TrimSpace(line[1]) {
+				correct++
+			}
 		}
+
 	}
 
 	fmt.Printf("You scored %d out of %d.\n", correct, len(lines))
