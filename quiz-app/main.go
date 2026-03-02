@@ -13,6 +13,7 @@ import (
 func main() {
 	// Add the csv flag
 	csvFileName := flag.String("csv", "problems.csv", "a csv file in the format of question and answer")
+	limit := flag.Int("limit", 10, "time limit for the quiz in seconds")
 	flag.Parse()
 
 	// Read the csv file
@@ -20,7 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open CSV file: %s\n", *csvFileName)
 	}
-
 	defer csvFile.Close()
 
 	// Parse the csv
@@ -31,7 +31,7 @@ func main() {
 	}
 
 	// Init timer
-	timer := time.NewTimer(time.Second * 5)
+	timer := time.NewTimer(time.Duration(*limit) * time.Second)
 
 	// Run the quiz
 	correct := 0
