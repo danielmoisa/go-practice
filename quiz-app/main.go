@@ -1,0 +1,47 @@
+package main
+
+import (
+	"encoding/csv"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+)
+
+func main() {
+	// Add the csv flag
+	csvFileName := flag.String("csv", "problems.csv", "a csv file in the format of question and answer")
+	flag.Parse()
+
+	// Read the csv file
+	csvFile, err := os.Open(*csvFileName)
+	if err != nil {
+		log.Fatalf("Failed to open CSV file: %s\n", *csvFileName)
+	}
+
+	defer csvFile.Close()
+
+	// Parse the csv
+	r := csv.NewReader(csvFile)
+	lines, err := r.ReadAll()
+	if err != nil {
+		log.Fatal("Error reading CSV blocks")
+	}
+
+	// Run the quiz
+	correct := 0
+	for i, line := range lines {
+		fmt.Printf("Problem #%d: %s = ", i+1, line[0])
+
+		var answer string
+		fmt.Scanf("%s\n", &answer)
+
+		// Use strings.TrimSpace to handle any accidental whitespace
+		if strings.TrimSpace(answer) == strings.TrimSpace(line[1]) {
+			correct++
+		}
+	}
+
+	fmt.Printf("You scored %d out of %d.\n", correct, len(lines))
+}
