@@ -30,29 +30,37 @@ func NewProductStore(db *sql.DB) *ProductStore {
 // InitDB sets up a new SQLite database and creates the products table
 func InitDB(dbPath string) (*sql.DB, error) {
 	// TODO: Open a SQLite database connection
-	db, err := sql.Open("sqlite3", "./sqlite.db")
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	// TODO: Create the products table if it doesn't exist
-	results, err := db.Exec("CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY, name TEXT, price REAL, quantity INTEGER, category TEXT);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY, name TEXT, price REAL, quantity INTEGER, category TEXT)")
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(results)
-
 	// The table should have columns: id, name, price, quantity, category
-	return nil, errors.New("not implemented")
+	return db, nil
 }
 
 // CreateProduct adds a new product to the database
-func (ps *ProductStore) CreateProduct(product *Product) error {
+func (ps *ProductStore) CreateProduct(product *Product) (*Product, error) {
 	// TODO: Insert the product into the database
+	result, err := ps.db.Exec("INSERT INTO products (name, price, quantity, category) VALUES (?, ?, ?, ?)", product.Name, product.Price, product.Quantity, product.Category)
+	if err != nil {
+		return &Product{}, err
+	}
+
 	// TODO: Update the product.ID with the database-generated ID
-	return errors.New("not implemented")
+	id, err := result.LastInsertId()
+	if err != nil {
+		return &Product{}, err
+	}
+	product.ID = id
+
+	return product, nil
 }
 
 // GetProduct retrieves a product by ID
@@ -94,5 +102,27 @@ func (ps *ProductStore) BatchUpdateInventory(updates map[int64]int) error {
 }
 
 func main() {
-	InitDB("./sqlite.db")
+	db, err := InitDB("./sqlite.db")
+	if err != nil {
+		panic(err)
+	}
+
+	defer db.Close()
+
+	product := &Product{
+		ID:       1231,
+		Name:     "First item",
+		Price:    20.2,
+		Quantity: 2,
+		Category: "sales",
+	}
+
+	store := NewProductStore(db)
+
+	product, err = store.CreateProduct(product)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Print(product)
 }
