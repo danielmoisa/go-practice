@@ -48,13 +48,13 @@ func InitDB(dbPath string) (*sql.DB, error) {
 // CreateProduct adds a new product to the database
 func (ps *ProductStore) CreateProduct(product *Product) (*Product, error) {
 	// TODO: Insert the product into the database
-	result, err := ps.db.Exec("INSERT INTO products (name, price, quantity, category) VALUES (?, ?, ?, ?)", product.Name, product.Price, product.Quantity, product.Category)
+	results, err := ps.db.Exec("INSERT INTO products (name, price, quantity, category) VALUES (?, ?, ?, ?)", product.Name, product.Price, product.Quantity, product.Category)
 	if err != nil {
 		return &Product{}, err
 	}
 
 	// TODO: Update the product.ID with the database-generated ID
-	id, err := result.LastInsertId()
+	id, err := results.LastInsertId()
 	if err != nil {
 		return &Product{}, err
 	}
@@ -66,8 +66,24 @@ func (ps *ProductStore) CreateProduct(product *Product) (*Product, error) {
 // GetProduct retrieves a product by ID
 func (ps *ProductStore) GetProduct(id int64) (*Product, error) {
 	// TODO: Query the database for a product with the given ID
+	results, err := ps.db.Query("SELECT * FROM products WHERE id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer results.Close()
+
 	// TODO: Return a Product struct populated with the data or an error if not found
-	return nil, errors.New("not implemented")
+	p := &Product{}
+	err = results.Scan(&p.ID, &p.Name, &p.Price, &p.Quantity, &p.Category)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("product with ID %d not found", id)
+		}
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // UpdateProduct updates an existing product
@@ -125,4 +141,11 @@ func main() {
 	}
 
 	fmt.Print(product)
+
+	getProduct, err := store.GetProduct(1)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(getProduct)
 }
