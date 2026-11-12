@@ -6,9 +6,10 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
-	"github.com/alexmullins/zip"
+	"github.com/yeka/zip"
 )
 
 var (
@@ -55,7 +56,10 @@ func main() {
 
 	go func() {
 		for scanner.Scan() {
-			pass := scanner.Text()
+			pass := strings.TrimSpace(scanner.Text())
+			if pass == "" {
+				continue
+			}
 			word <- pass
 		}
 		close(word)
