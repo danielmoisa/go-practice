@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -90,19 +91,33 @@ func zipCrackWorker(word <-chan string, found chan<- string, wg *sync.WaitGroup)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer ziper.Close()
 	defer wg.Done()
 
 	for w := range word {
+		correct := true
 		for _, z := range ziper.File {
 			z.SetPassword(w)
-			_, err := z.Open()
-			log.Println("try:", w, "err:", err) // debug only
-
-			if err == nil {
-				found <- w
+			rc, err := z.Open()
+			if err != nil {
+				correct = false
+				break
 			}
+
+			_, err = io.Copy(io.Discard, rc) // forces CRC-32 check
+			rc.Close()
+			if err != nil {
+				correct = false
+				break
+			}
+		}
+
+		if correct {
+			select {
+			case found <- w:
+			default:
+			}
+			return
 		}
 	}
 }
